@@ -4,7 +4,7 @@ import tempfile
 
 st.set_page_config(page_title="Subastas BOE 🌟", layout="wide")
 st.title("🗂️ Buscador de Subastas del BOE")
-st.markdown("Bienvenido a tu herramienta de análisis de subastas públicas. Carga un archivo CSV para empezar a explorar oportunidades 🏠🚗🏢")
+st.markdown("Bienvenido a tu herramienta profesional de análisis de subastas públicas. Carga un archivo CSV para empezar a explorar oportunidades 🏠🚗🏢")
 
 archivo = st.file_uploader("📤 Sube un archivo CSV con subastas extraídas", type=["csv"])
 
@@ -14,28 +14,35 @@ if archivo is not None:
     st.success(f"✅ {len(df)} subastas cargadas correctamente")
 
     with st.expander("🔎 Filtrar subastas", expanded=True):
-        tipo_bien = st.multiselect("🏷️ Tipo de Bien", df["Tipo de Bien"].dropna().unique())
-        provincia = st.multiselect("📍 Provincia", df["Provincia"].dropna().unique())
+        col1, col2, col3 = st.columns([1, 1, 2])
 
-        deuda_min, deuda_max = st.slider("💸 Deuda Pendiente (€)",
-                                         float(df["Deuda Pendiente (€)"].min()),
-                                         float(df["Deuda Pendiente (€)"].max()),
-                                         (float(df["Deuda Pendiente (€)"].min()), float(df["Deuda Pendiente (€)"].max())))
+        with col1:
+            tipo_bien = st.multiselect("🏷️ Tipo de Bien", df["Tipo de Bien"].dropna().unique())
+        with col2:
+            provincia = st.multiselect("📍 Provincia", df["Provincia"].dropna().unique())
 
-        valor_cat_min, valor_cat_max = st.slider("🏠 Valor Catastral (€)",
-                                                 float(df["Valor Catastral (€)"].min()),
-                                                 float(df["Valor Catastral (€)"].max()),
-                                                 (float(df["Valor Catastral (€)"].min()), float(df["Valor Catastral (€)"].max())))
+        col4, col5 = st.columns(2)
+        with col4:
+            deuda_min, deuda_max = st.slider("💸 Deuda Pendiente (€)",
+                                             float(df["Deuda Pendiente (€)"].min()),
+                                             float(df["Deuda Pendiente (€)"].max()),
+                                             (float(df["Deuda Pendiente (€)"].min()), float(df["Deuda Pendiente (€)"].max())))
 
-        tasacion_min, tasacion_max = st.slider("📏 Valor de Tasación (€)",
-                                               float(df["Valor de Tasación (€)"].min()),
-                                               float(df["Valor de Tasación (€)"].max()),
-                                               (float(df["Valor de Tasación (€)"].min()), float(df["Valor de Tasación (€)"].max())))
+            valor_cat_min, valor_cat_max = st.slider("🏠 Valor Catastral (€)",
+                                                     float(df["Valor Catastral (€)"].min()),
+                                                     float(df["Valor Catastral (€)"].max()),
+                                                     (float(df["Valor Catastral (€)"].min()), float(df["Valor Catastral (€)"].max())))
 
-        puja_min, puja_max = st.slider("🔨 Importe de Puja Mínima (€)",
-                                       float(df["Importe de Puja Mínima (€)"].min()),
-                                       float(df["Importe de Puja Mínima (€)"].max()),
-                                       (float(df["Importe de Puja Mínima (€)"].min()), float(df["Importe de Puja Mínima (€)"].max())))
+        with col5:
+            tasacion_min, tasacion_max = st.slider("📏 Valor de Tasación (€)",
+                                                   float(df["Valor de Tasación (€)"].min()),
+                                                   float(df["Valor de Tasación (€)"].max()),
+                                                   (float(df["Valor de Tasación (€)"].min()), float(df["Valor de Tasación (€)"].max())))
+
+            puja_min, puja_max = st.slider("🔨 Importe de Puja Mínima (€)",
+                                           float(df["Importe de Puja Mínima (€)"].min()),
+                                           float(df["Importe de Puja Mínima (€)"].max()),
+                                           (float(df["Importe de Puja Mínima (€)"].min()), float(df["Importe de Puja Mínima (€)"].max())))
 
     df_filtrado = df.copy()
     if tipo_bien:
