@@ -8,7 +8,27 @@ from webdriver_manager.chrome import ChromeDriverManager
 import time
 import tempfile
 
-def scrape_subastas(paginas=2):
+def extraer_detalle(driver, enlace):
+    driver.get(enlace)
+    time.sleep(2)
+
+    def extraer_texto(xpath):
+        try:
+            return driver.find_element(By.XPATH, xpath).text.strip().replace(".", "").replace(",", ".")
+        except:
+            return ""
+
+    return {
+        "Tipo de Bien": extraer_texto("//td[contains(text(),'Tipo de bien')]/following-sibling::td"),
+        "Provincia": extraer_texto("//td[contains(text(),'Provincia')]/following-sibling::td"),
+        "Deuda Pendiente (€)": float(extraer_texto("//td[contains(text(),'Deuda pendiente')]/following-sibling::td") or 0),
+        "Valor Catastral (€)": float(extraer_texto("//td[contains(text(),'Valor catastral')]/following-sibling::td") or 0),
+        "Valor de Tasación (€)": float(extraer_texto("//td[contains(text(),'Valor de tasación')]/following-sibling::td") or 0),
+        "Importe de Puja Mínima (€)": float(extraer_texto("//td[contains(text(),'Importe mínimo')]/following-sibling::td") or 0),
+        "Fecha de Fin": extraer_texto("//td[contains(text(),'Fin de la subasta')]/following-sibling::td")
+    }
+
+def scrape_subastas(paginas=2, limite_por_pagina=5):
     options = Options()
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
@@ -20,33 +40,22 @@ def scrape_subastas(paginas=2):
     driver.get(url)
     time.sleep(3)
 
-    buscar_button = driver.find_element(By.ID, "buscar")
-    buscar_button.click()
+    driver.find_element(By.ID, "buscar").click()
     time.sleep(3)
 
     subastas = []
 
     for page in range(1, paginas + 1):
         st.info(f"Extrayendo página {page}")
-        rows = driver.find_elements(By.CSS_SELECTOR, ".resultadoSubasta")
+        rows = driver.find_elements(By.CSS_SELECTOR, ".resultadoSubasta")[:limite_por_pagina]
 
         for row in rows:
             enlace = row.find_element(By.TAG_NAME, "a").get_attribute("href")
             titulo = row.find_element(By.TAG_NAME, "a").text
-            detalle = row.text.split("\n")
 
-            # Datos simulados para vista previa de tabla enriquecida
-            subastas.append({
-                "Título": titulo,
-                "Tipo de Bien": "Vivienda",
-                "Provincia": "Madrid",
-                "Deuda Pendiente (€)": 5230.45,
-                "Valor Catastral (€)": 120000.00,
-                "Valor de Tasación (€)": 115000.00,
-                "Importe de Puja Mínima (€)": 57500.00,
-                "Fecha de Fin": "20/04/2025",
-                "Enlace": enlace
-            })
+            detalle = extraer_detalle(driver, enlace)
+            detalle.update({"Título": titulo, "Enlace": enlace})
+            subastas.append(detalle)
 
         try:
             siguiente = driver.find_element(By.LINK_TEXT, "Siguiente")
@@ -63,10 +72,11 @@ st.set_page_config(page_title="Subastas BOE", layout="wide")
 st.title("Buscador de Subastas del BOE")
 st.markdown("Extrae y explora subastas públicas del portal oficial.")
 
-paginas = st.slider("Nº de páginas a escanear", 1, 10, 2)
+paginas = st.slider("Nº de páginas a escanear", 1, 5, 1)
+limite = st.slider("Subastas por página", 1, 10, 3)
 
 if st.button("Extraer subastas"):
-    df = scrape_subastas(paginas=paginas)
+    df = scrape_subastas(paginas=paginas, limite_por_pagina=limite)
     st.success(f"{len(df)} subastas extraídas")
 
     # Filtros interactivos (excluyendo Título y Enlace)
@@ -93,7 +103,6 @@ if st.button("Extraer subastas"):
                                    float(df["Importe de Puja Mínima (€)"].max()),
                                    (float(df["Importe de Puja Mínima (€)"].min()), float(df["Importe de Puja Mínima (€)"].max())))
 
-    # Aplicar filtros
     df_filtrado = df.copy()
     if tipo_bien:
         df_filtrado = df_filtrado[df_filtrado["Tipo de Bien"].isin(tipo_bien)]
